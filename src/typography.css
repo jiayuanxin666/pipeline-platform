@@ -1,0 +1,159 @@
+/* Font system only: Inter renders Latin and numbers; Noto Sans SC renders Han text. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/InterVariable.woff2') format('woff2');
+}
+
+:root {
+  --font-body: 'Inter', 'Noto Sans SC', 'PingFang SC', sans-serif;
+  --font-tech: 'Inter', 'Noto Sans SC', sans-serif;
+  --type-body: 14px;
+  --type-caption: 12px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  font-family: var(--font-body);
+  font-size: var(--type-body);
+  font-weight: var(--weight-regular);
+  line-height: 1.6;
+}
+
+body, button, input, select, textarea, svg { font-family: var(--font-body); }
+.cover-page, .app-shell { font-family: var(--font-body); }
+
+.page-heading h1 {
+  font-size: 32px;
+  font-weight: var(--weight-bold);
+  line-height: 1.2;
+  letter-spacing: -.02em;
+}
+.page-heading p {
+  font-size: var(--type-body);
+  font-weight: var(--weight-regular);
+  line-height: 1.7;
+  letter-spacing: 0;
+}
+.panel-heading h2, .telemetry-card-title>span:first-child, .stat-label {
+  font-size: var(--type-body);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0;
+}
+.nav-item { font-size: var(--type-body); font-weight: var(--weight-medium); letter-spacing: 0; }
+.nav-item.active { font-weight: var(--weight-semibold); }
+
+.main-content p, .main-content td, .modal-body { font-size: var(--type-body); font-weight: var(--weight-regular); line-height: 1.6; }
+.main-content .page-heading p { line-height: 1.7; }
+.main-content small, .main-content .muted, .main-content .panel-meta,
+.main-content .stat-card p, .main-content .summary-stat p,
+.main-content .telemetry-card-foot, .main-content .footnote {
+  font-size: var(--type-caption);
+  font-weight: var(--weight-regular);
+}
+.task-strip-heading>small, .task-entry small, .stream-source small,
+.stream-timestamp>span, .stream-latency>span, .history-presets small,
+.results-caption, .filters label, .field-label, .topology-caption,
+.topology-bottom, .chart-subtitle, .side-note {
+  font-size: var(--type-caption);
+  font-weight: var(--weight-regular);
+}
+
+/* Shared controls and secondary labels should remain readable at normal zoom. */
+.button, .text-button, .demo-control, .demo-help, .sidebar-home,
+.stream-pause.button, .tabs button, .segmented button {
+  font-size: var(--type-caption);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0;
+}
+.tabs button.active, .segmented button.active { font-weight: var(--weight-semibold); }
+.main-content .filters input, .main-content .filters select,
+.main-content .field-label input, .main-content .field-label select,
+.main-content .field-label textarea, .main-content .search-input input {
+  font-size: var(--type-body);
+  font-weight: var(--weight-regular);
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+th, .recent-samples th { font-size: var(--type-caption); font-weight: var(--weight-medium); letter-spacing: 0; }
+.main-content td strong { font-weight: var(--weight-medium); }
+.badge, .event-banner-main .badge, .sample-quality, .latest-tag,
+.timeline-title time, .event-banner-main>div>span,
+.work-facts>div>span, .location-labels, .sensor-card>small,
+.sensor-card p, .sensor-readings span, .monitor-event-link span {
+  font-size: var(--type-caption);
+  font-weight: var(--weight-regular);
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+.task-strip-heading>strong, .demo-card-title, .stream-source strong,
+.topology-name, .evidence-layout h3, .modal-head h2 {
+  font-size: var(--type-body);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0;
+}
+.event-banner-main strong, .sensor-card>div:first-child strong,
+.timeline-title, .timeline-title strong, .detail-pairs,
+.detail-pairs strong, .work-facts strong,
+.linked-alert-card>div strong, .monitor-event-link strong {
+  font-size: var(--type-body);
+  font-weight: var(--weight-medium);
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+.top-clock, .demo-card>small, .timeline-title time,
+.sensor-readings strong, .work-facts strong, .event-banner-main strong {
+  font-variant-numeric: tabular-nums;
+}
+.stream-timestamp time, .recent-samples .mono, .cell-id, .stream-sequence b { letter-spacing: 0; }
+
+/* Keep Chinese phrases naturally spaced, including the landing cover. */
+.brand strong, .cover-brand strong { font-weight: var(--weight-semibold); letter-spacing: 0; }
+.cover-product-name, .cover-principles strong, .cover-flow-detail h3,
+.cover-flow-step-copy strong, .cover-capability-grid h3 { letter-spacing: 0; }
+.cover-copy h1 { letter-spacing: -.02em; }
+.cover-section-title h2 { letter-spacing: -.01em; }
+.cover-intro { font-size: var(--type-body); line-height: 1.7; letter-spacing: 0; }
+.cover-flow-step-copy strong, .cover-flow-cta h3 { font-weight: var(--weight-semibold); }
+.cover-flow-facts strong { font-weight: var(--weight-medium); }
+
+.stat-value, .summary-stat>strong, .measurement>strong,
+.telemetry-value>.telemetry-number {
+  font-family: var(--font-tech);
+  font-size: clamp(48px, 4vw, 56px);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.stat-value span, .summary-stat>strong small, .measurement>strong small,
+.telemetry-unit {
+  font-family: var(--font-tech);
+  font-size: var(--type-caption);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0;
+}
+.top-clock, .mono, .cell-id, .telemetry-number, .telemetry-delta,
+.stream-timestamp time, .stream-latency>b, .stream-sequence b,
+.task-entry strong b, .results-caption strong, .duration-note strong,
+.recent-samples td {
+  font-family: var(--font-tech);
+  font-variant-numeric: tabular-nums;
+}
+
+.eyebrow, .side-label, .task-strip-heading>span,
+.cover-kicker, .cover-section-title>span, .cover-workflow>span {
+  font-family: var(--font-tech);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: .08em;
+}
+
+@media (min-width: 721px) and (max-width: 980px) {
+  .telemetry-value>.telemetry-number { font-size: clamp(22px, calc(11vw - 57px), 48px); }
+}
+@media (max-width: 980px) {
+  .telemetry-delta { font-size: 8px; }
+}

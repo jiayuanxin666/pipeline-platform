@@ -1,0 +1,17 @@
+import { useEffect, useRef, type ReactNode } from 'react';
+import { ArrowDownToLine, ChevronRight, X } from 'lucide-react';
+import { dateLabel, fullTime } from '../data/mockApi';
+import { downloadCsv } from '../domain/business';
+import type { Alert, Log } from '../domain/types';
+export function Badge({children,tone}:{children:ReactNode;tone?:string}) {const text=String(children);const value=tone||(text==='高'?'red':text==='待核查'||text==='中'||text==='待复核'?'orange':text==='已关闭'||text==='在线'||text==='正常'?'green':text==='离线'?'gray':'blue');return <span className={`badge ${value}`}><i/>{children}</span>;}
+export function PageHeading({eyebrow,title,description,actions}:{eyebrow?:string;title:string;description:string;actions?:ReactNode}) {return <div className="page-heading"><div><div className="eyebrow">{eyebrow||'PIPELINE INTELLIGENCE'}</div><h1>{title}</h1><p>{description}</p></div><div className="heading-actions">{actions}</div></div>;}
+export function Panel({title,meta,children,className=''}:{title?:string;meta?:ReactNode;children:ReactNode;className?:string}) {return <section className={`panel ${className}`}>{title&&<div className="panel-heading"><h2>{title}</h2>{meta&&<div className="panel-meta">{meta}</div>}</div>}{children}</section>;}
+export function Empty({title='暂无记录',description='当前没有需要展示的数据。'}:{title?:string;description?:string}) {return <div className="empty"><div className="empty-symbol">⌁</div><strong>{title}</strong><p>{description}</p></div>;}
+export function Modal({title,children,onClose}:{title:string;children:ReactNode;onClose:()=>void}) {
+ const ref=useRef<HTMLDialogElement>(null);
+ useEffect(()=>{const previous=document.activeElement as HTMLElement;ref.current?.showModal();return()=>{ref.current?.close();previous?.focus();};},[]);
+ return <dialog ref={ref} className="modal" onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===ref.current)onClose();}}><div className="modal-head"><h2>{title}</h2><button aria-label="关闭弹窗" className="icon-button" onClick={onClose}><X size={20}/></button></div>{children}</dialog>;
+}
+export function Timeline({logs}:{logs:Log[]}) {return <ol className="timeline">{logs.map((log,i)=><li key={`${i}-${log.at}`}><div className="timeline-dot"/><div><div className="timeline-title"><strong>{log.action}</strong><time>{fullTime(log.at)}</time></div><p>{log.note}</p><small>{log.actor}</small></div></li>)}</ol>;}
+export function ExportAlerts({alerts,label='导出 CSV'}:{alerts:Alert[];label?:string}) {return <button className="button secondary" disabled={!alerts.length} onClick={()=>downloadCsv(`告警查询-${dateLabel(Date.now())}.csv`,['告警编号','类型','优先级','管线','管段','位置','发现时间','状态','负责人','关闭结论'],alerts.map(a=>[a.id,a.type,a.priority,`示例管线 ${a.pipeline}`,a.segment,a.location,fullTime(a.at),a.status,a.owner,a.resolution||'']))}><ArrowDownToLine size={15}/>{label}</button>;}
+export function AlertSummary({alerts,onOpen}:{alerts:Alert[];onOpen:(id:string)=>void}) {return <div className="alert-summary">{alerts.length?alerts.map(a=><button key={a.id} className="alert-summary-row" onClick={()=>onOpen(a.id)}><span className={`alert-mark ${a.priority==='高'?'red':'orange'}`}>!</span><span className="summary-main"><strong>{a.type}<span className="inline-location">{a.segment} · {a.location}</span></strong><small>{fullTime(a.at)} · {a.id}</small></span><Badge>{a.status}</Badge><ChevronRight size={17}/></button>):<Empty title="当前管线无待处理告警" description="所有事件已关闭，或当前场景运行正常。"/>}</div>;}

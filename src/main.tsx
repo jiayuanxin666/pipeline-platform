@@ -1,0 +1,10 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { StoreProvider } from './state/Store';
+import App from './App';
+import './styles.css';
+import './workspace.css';
+import './telemetry.css';
+import './workspace-backdrop.css';
+import './typography.css';
+createRoot(document.getElementById('root')!).render(<React.StrictMode><StoreProvider><App/></StoreProvider></React.StrictMode>);

@@ -1,0 +1,17 @@
+import { useEffect, useState } from 'react';
+import { Search, SlidersHorizontal } from 'lucide-react';
+import { useStore } from '../state/Store';
+import { AlertTable } from '../components/AlertTable';
+import { ExportAlerts, PageHeading, Panel } from '../components/UI';
+import type { Alert } from '../domain/types';
+function useSticky(key:string,initial:string) {const [value,setValue]=useState(()=>{try{return sessionStorage.getItem(key)||initial;}catch{return initial;}});return [value,(v:string)=>{setValue(v);try{sessionStorage.setItem(key,v);}catch{/* 内存筛选仍有效 */}}] as const;}
+export default function Alerts({go,query}:{go:(path:string)=>void;query:string}) {
+ const {state}=useStore();const [search,setSearch]=useSticky('alert-search',''),[type,setType]=useSticky('alert-type','all'),[priority,setPriority]=useSticky('alert-priority','all'),[status,setStatus]=useSticky('alert-status','all');
+ useEffect(()=>{const requested=new URLSearchParams(query).get('status');if(requested&&['待核查','已确认','处理中','已关闭'].includes(requested)){setStatus(requested);setSearch('');setType('all');setPriority('all');}},[query]);
+ const filtered=!!search||type!=='all'||priority!=='all'||status!=='all'||state.pipeline!=='all';
+ const alerts=state.alerts.filter(a=>(state.pipeline==='all'||a.pipeline===state.pipeline)&&(type==='all'||a.type===type)&&(priority==='all'||a.priority===priority)&&(status==='all'||a.status===status)&&`${a.id} ${a.location} ${a.segment} 示例管线 ${a.pipeline}`.toLowerCase().includes(search.trim().toLowerCase()));
+ const scope=state.alerts.filter(a=>state.pipeline==='all'||a.pipeline===state.pipeline);
+ const tabs=['all','待核查','已确认','处理中','已关闭'];
+ const reset=()=>{setSearch('');setType('all');setPriority('all');setStatus('all');};
+ return <><PageHeading eyebrow="ALERT MANAGEMENT" title="告警中心" description="按优先级核查异常，保留每次判断与处置的依据。" actions={<ExportAlerts alerts={alerts}/>}/><Panel><div className="tabs">{tabs.map(t=><button className={status===t?'active':''} key={t} aria-pressed={status===t} onClick={()=>setStatus(t)}>{t==='all'?'全部事件':t}<span>{scope.filter(a=>t==='all'||a.status===t).length}</span></button>)}</div><div className="filters alert-filters"><label className="search-input"><span>编号或位置</span><div><Search size={16}/><input aria-label="搜索告警编号或位置" placeholder="搜索编号、管段或里程" value={search} onChange={e=>setSearch(e.target.value)}/></div></label><label>告警类型<select aria-label="告警类型" value={type} onChange={e=>setType(e.target.value)}><option value="all">全部类型</option>{['疑似泄漏','压力预警','通信中断'].map(t=><option key={t}>{t}</option>)}</select></label><label>优先级<select aria-label="优先级" value={priority} onChange={e=>setPriority(e.target.value)}><option value="all">全部优先级</option>{['高','中','低'].map(t=><option key={t}>{t}</option>)}</select></label><label>当前状态<select aria-label="当前状态" value={status} onChange={e=>setStatus(e.target.value)}><option value="all">全部状态</option>{tabs.slice(1).map(t=><option key={t}>{t}</option>)}</select></label><button className="button secondary" onClick={reset}><SlidersHorizontal size={15}/>重置筛选</button></div><div className="results-caption"><span>当前查询 <strong>{alerts.length}</strong> 条告警</span><span>优先处理高优先级事件 · 点击表头可排序</span></div><AlertTable alerts={alerts as Alert[]} onOpen={id=>go(`/alerts/${id}`)} filtered={filtered}/></Panel><p className="footnote">统计范围：{state.pipeline==='all'?'全部管线':`示例管线 ${state.pipeline}`}。误报关闭保留原始告警及核查记录；CSV 导出仅包含当前筛选结果。</p></>;
+}

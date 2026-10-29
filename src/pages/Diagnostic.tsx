@@ -1,0 +1,40 @@
+import { useState } from 'react';
+import { Activity, ArrowLeft, ArrowRight, ClipboardCheck, ClipboardPlus, Gauge, Radio, Waves } from 'lucide-react';
+import { useStore } from '../state/Store';
+import { devices, fullTime, getSeries, isOnline, lastCollected, sampleAt, sensors, staff } from '../data/mockApi';
+import { Badge, PageHeading, Panel, Timeline } from '../components/UI';
+import { TrendChart } from '../components/Charts';
+import type { Alert } from '../domain/types';
+
+export default function Diagnostic({id,go}:{id:string;go:(path:string)=>void}) {
+  const {state,act}=useStore(); const alert=state.alerts.find(item=>item.id===id); const [note,setNote]=useState(''),[owner,setOwner]=useState(staff[0]),[task,setTask]=useState(''),[showWork,setShowWork]=useState(false),[error,setError]=useState('');
+  if(!alert)return <><PageHeading title="事件不存在" description="该告警编号无效或已从当前演示数据中移除。"/><button className="button secondary" onClick={()=>go('/alerts')}><ArrowLeft size={15}/>返回告警中心</button></>;
+  const related=sensors.filter(s=>alert.sensors.includes(s.id)),segment=alert.segment,window: [number,number]=[alert.at,alert.end];
+  const match=alert.location.match(/K(\d+)\+(\d+)/),pointKm=match?Number(match[1])+Number(match[2])/1000:0;
+  const rangeStart=alert.range?.[0]??Math.max(0,pointKm-.15),rangeEnd=alert.range?.[1]??Math.min(30,pointKm+.15),rangeCenter=(rangeStart+rangeEnd)/2;
+  const detailTitle=alert.type==='疑似泄漏'?'泄漏诊断详情':alert.type==='压力预警'?'压力预警核查详情':'设备告警详情';
+  const series=related.length?getSeries(state,related[related.length-1].id,alert.at-12*60000,Math.min(alert.end+12*60000,state.clock)):[];
+  const second=related.length>1?{samples:getSeries(state,related[0].id,alert.at-12*60000,Math.min(alert.end+12*60000,state.clock)),label:`上游 ${related[0].km} km`}:undefined;
+  const alertSensor=related[related.length-1];
+  const work=state.works.filter(w=>w.alertId===alert.id).sort((a,b)=>b.createdAt-a.createdAt)[0];
+  const isDevice=alert.type==='通信中断';
+  const submitReview=(kind:'confirm'|'dismiss')=>{if(!note.trim()){setError(kind==='dismiss'?'请填写判定误报的原因':'请填写人工核查说明');return;}if(act({kind,alertId:alert.id,note})){setNote('');setError('');}};
+  const createWork=()=>{if(!task.trim()){setError('请填写任务描述');return;}if(act({kind:'create',alertId:alert.id,owner,note:task})){setTask('');setShowWork(false);setError('');}};
+  const openMonitor=()=>go(`/monitor?sensor=${alertSensor?.id||`${alert.pipeline}-M04`}&at=${alert.at}&alert=${encodeURIComponent(alert.id)}`);
+  return <>
+    <div className="back-row"><button className="text-button" onClick={()=>go('/alerts')}><ArrowLeft size={15}/>返回告警中心</button><span>事件诊断 / {alert.id}</span></div>
+    <PageHeading eyebrow="EVENT DIAGNOSTICS" title={detailTitle} description="查看模拟规则证据、人工核查记录与关联处置过程。" actions={<Badge tone={alert.priority==='高'?'red':undefined}>{alert.priority}优先级 · {alert.type}</Badge>}/>
+    <Panel className="event-banner"><div className="event-banner-main"><div><span>告警编号</span><strong className="mono">{alert.id}</strong></div><div><span>发现时间</span><strong>{fullTime(alert.at)}</strong></div><div><span>管线 / 管段</span><strong>示例管线 {alert.pipeline} · {segment}</strong></div><div><span>位置</span><strong>{alert.location}</strong></div><div><span>当前状态</span><Badge>{alert.status}</Badge></div></div></Panel>
+    <div className="diagnostic-grid"><div className="diagnostic-main">
+      <Panel title="异常位置与监测点" meta={<span>拓扑示意，非地理地图</span>}><div className="location-strip"><div className="location-track"><div className="location-highlight" style={{left:`${rangeStart/30*100}%`,width:`${Math.max(.8,(rangeEnd-rangeStart)/30*100)}%`}}/><span className="location-marker" style={{left:`${rangeCenter/30*100}%`}}/></div><div className="location-labels"><span>K0+000 起点站场</span><strong>{alert.type==='疑似泄漏'?'疑似区间：':''}{alert.location}</strong><span>K30+000 终点站场</span></div><div className="location-scale"><span>0 km</span><span>10 km</span><span>20 km</span><span>30 km</span></div></div><div className="sensor-cards">{related.map(s=>{const online=isOnline(state,s.id),sample=sampleAt(state,s.id,state.clock),device=devices.find(d=>d.sensorId===s.id);return <div className="sensor-card" key={s.id}><div><Radio size={16}/><strong>{s.name}</strong><Badge>{online?'在线':'离线'}</Badge></div><p>{s.deviceId} · {device?.model}</p><small>最后采集：{fullTime(lastCollected(state,s.id))}</small><div className="sensor-readings"><span>压力<strong>{online?`${sample.pressure} MPa`:'数据不可用'}</strong></span><span>流量<strong>{online?`${sample.flow?.toLocaleString()} Nm³/h`:'数据不可用'}</strong></span></div></div>;})}</div></Panel>
+      <Panel title="诊断证据曲线" meta={<button className="text-button" onClick={openMonitor}>打开实时监测 <ArrowRight size={14}/></button>}><div className="info-banner">异常窗口：{fullTime(alert.at)} ～ {fullTime(alert.end)} · 曲线仅用于教学演示，不能替代现场判断。</div><div className="two-columns chart-pair"><div><div className="chart-subtitle"><span><Activity size={14}/>压力变化</span><small>MPa</small></div><TrendChart samples={series} second={second} metric="pressure" window={window} height={230}/></div><div><div className="chart-subtitle"><span><Waves size={14}/>流量变化</span><small>Nm³/h</small></div><TrendChart samples={series} second={second} metric="flow" window={window} height={230}/></div></div></Panel>
+      <Panel title="模拟诊断结果" meta={<Badge tone="blue">模拟诊断结果</Badge>}><div className="evidence-layout"><div><h3>触发规则</h3><p>{alert.rule}</p><h3>诊断证据</h3><ul className="evidence-list">{alert.evidence.map(item=><li key={item}>{item}</li>)}</ul></div><div className="operating-card"><Gauge size={19}/><strong>工况信息</strong><p>{alert.operating}</p><small>定位结果：{alert.range?`疑似区间 ${alert.location}`:`监测点 ${alert.location}`}</small></div></div></Panel>
+      {work&&<Panel title="关联工单" meta={<button className="text-button" onClick={()=>go(`/works?id=${encodeURIComponent(work.id)}`)}>查看工单 <ArrowRight size={14}/></button>}><div className="linked-work"><ClipboardCheck size={20}/><div><strong>{work.id} · {work.description}</strong><small>{work.owner} · {work.status}</small></div><Badge>{work.status}</Badge></div></Panel>}
+    </div><div className="diagnostic-side">
+      <Panel title="人工核查操作"><div className="review-form"><p className="muted">请结合曲线和设备状态填写现场核查结论，操作会写入本地时间线。</p>{alert.status==='待核查'?<><label className="field-label">核查说明<textarea value={note} onChange={e=>{setNote(e.target.value);setError('');}} rows={4} placeholder={isDevice?'说明是否发现设备或通信链路异常':'记录现场检查内容与工况变化'} /></label>{error&&<p className="field-error">{error}</p>}<button className="button primary full" onClick={()=>submitReview('confirm')}>{isDevice?'确认设备异常':'确认异常'}</button>{!isDevice&&<button className="button secondary full" onClick={()=>submitReview('dismiss')}>判定误报</button>}</>:<div className="status-callout"><Badge>{alert.status}</Badge><p>{alert.resolution==='误报'?'已判定误报，原始证据与操作记录继续保留。':alert.status==='已关闭'?'事件已关闭。':'异常已确认；问题是否解决以工单复核为准。'}</p>{alert.logs.filter(log=>log.action==='确认异常'||log.action==='确认设备异常'||log.action==='判定误报').map(log=><small key={log.at}>{log.actor}：{log.note}</small>)}</div>}
+        {alert.status==='已确认'&&!work&&<div className="create-work-box"><h3>创建处置工单</h3><p>异常确认表示事件成立，问题仍需处理并复核。</p>{!showWork?<button className="button primary full" onClick={()=>{setShowWork(true);setError('');}}><ClipboardPlus size={16}/>创建关联工单</button>:<><label className="field-label">负责人<select value={owner} onChange={e=>setOwner(e.target.value)}>{staff.map(person=><option key={person}>{person}</option>)}</select></label><label className="field-label">任务描述<textarea rows={3} value={task} onChange={e=>{setTask(e.target.value);setError('');}} placeholder="描述现场检查与处理任务"/></label>{error&&<p className="field-error">{error}</p>}<div className="form-actions"><button className="button secondary" onClick={()=>setShowWork(false)}>取消</button><button className="button primary" onClick={createWork}>派单</button></div></>}</div>}
+      </div></Panel>
+      <Panel title="操作时间线"><Timeline logs={alert.logs}/></Panel>
+    </div></div>
+  </>;
+}
