@@ -21,7 +21,7 @@ const routes = [
   { path: '/works', title: '处置工单', icon: ClipboardList },
   { path: '/history', title: '历史分析', icon: History },
 ];
-function readPath() { return window.location.hash.slice(1) || '/'; }
+function readPath() { return window.location.hash.startsWith('#/') ? window.location.hash.slice(1) : '/'; }
 export default function App() {
   const { state, setPipeline, togglePause, reset, toast, message, storageWarning } = useStore();
   const [url, setUrl] = useState(readPath), [helpOpen, setHelpOpen] = useState(false), [mobileNav, setMobileNav] = useState(false);
@@ -30,7 +30,7 @@ export default function App() {
     try{return localStorage.getItem('pipeline-background-motion')!=='off';}catch{return true;}
   });
   useEffect(()=>{try{localStorage.setItem('pipeline-background-motion',backgroundMotion?'on':'off');}catch{/* Background preference remains available for this session. */}},[backgroundMotion]);
-  useEffect(() => { const pop = () => { setUrl(readPath()); setMobileNav(false); }; window.addEventListener('hashchange', pop); return () => window.removeEventListener('hashchange', pop); }, []);
+  useEffect(() => { const pop = () => { if (!window.location.hash || window.location.hash.startsWith('#/')) { setUrl(readPath()); setMobileNav(false); } }; window.addEventListener('hashchange', pop); return () => window.removeEventListener('hashchange', pop); }, []);
   useEffect(() => { if (!mobileNav) return; const close = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileNav(false); }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close); }, [mobileNav]);
   const go = (path: string) => { window.history.pushState({}, '', `#${path}`); setUrl(readPath()); setMobileNav(false); window.scrollTo(0, 0); };
   const changeScenario = (scenario: Scenario) => {
